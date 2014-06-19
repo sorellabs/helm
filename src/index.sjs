@@ -34,8 +34,14 @@ var URI      = require('net.uri').URI
 var curry    = require('core.lambda').curry
 
 
+// -- Helpers ----------------------------------------------------------
+function pairs(o) {
+  return Object.keys(o).map(λ(k) -> [k, o[k]])
+}
+
+
 // -- Type checkers ----------------------------------------------------
-var diabledNames = 'class contenteditable dir hidden id tabindex href'.split(' ')
+var disabledNames = 'class contenteditable dir hidden id tabindex href'.split(' ')
 
 function isDisabled(a) {
   return disabledNames.indexOf(a) !== -1
@@ -177,7 +183,7 @@ Href::render = function() {
 
 Style::render = function() {
   return 'style="' + entities.encode(pairs(this.value)
-                                       .map(λ[# + ':' + #])
+                                       .map(λ(x) -> x[0] + ':' + x[1])
                                        .join('; ')) 
        + '"'
 }
@@ -213,7 +219,7 @@ DirValues::render = function() { return match this {
 
 // Utility functions for Html
 var node        = exports.node        = curry(3, Html.Node);
-var emptyNode   = exports.emptyNode   = curry(2, Html.childlessNode);
+var emptyNode   = exports.emptyNode   = curry(2, Html.ChildlessNode);
 var text        = exports.text        = Text;
 var dynamicHtml = exports.dynamicHtml = DynamicHtml;
 var htmlSeq     = exports.htmlSeq     = HtmlSeq;
@@ -235,12 +241,14 @@ var attrSeq         = exports.attrSeq         = AttrSeq;
 exports.ContentEditableValues = ContentEditableValues;
 exports.DirValues             = DirValues;
 
+exports.elements = {}
+
 // Common elements
 var voidElements = ["area", "base", "br", "command", "embed", "hr", "img"
                    ,"input", "keygen", "link", "meta", "param", "source"
                    ,"track", "wbr"];
 
-voidElements.forEach(λ(x) -> exports[x] = emptyNode(x));
+voidElements.forEach(λ(x) -> exports.elements[x] = emptyNode(x));
 
 
 var elements = ["html", "head", "title", "style", "script", "noscript"
@@ -258,4 +266,4 @@ var elements = ["html", "head", "title", "style", "script", "noscript"
                ,"textarea", "output", "progress", "meter", "details", "summary"
                ,"menuitem", "menu"];
 
-elements.forEach(λ(x) -> exports[x] = node(x));
+elements.forEach(λ(x) -> exports.elements[x] = node(x));
