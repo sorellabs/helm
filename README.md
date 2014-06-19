@@ -13,7 +13,14 @@ A type-safe HTML templating library.
 ## Example
 
 ```js
-( ... )
+var _    = require('helm').build
+var text = require('helm').text
+
+function link(a){
+  return _('a', { class: 'link', href: a.url }, text(a.text))
+}
+
+
 ```
 
 

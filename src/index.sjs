@@ -274,7 +274,7 @@ ELEMENTS.forEach(λ(x) -> exports.elements[x] = node(x));
 // -- Simpler builder --------------------------------------------------
 exports.build = build
 function build(tag, attributes, children) {
-  attributes = buildAttributes(attributes || {})
+  attributes = AttrSeq(attributes || [])
   children   = HtmlSeq(children || [])
   tag        = tag.toLowerCase()
 
@@ -285,8 +285,6 @@ function build(tag, attributes, children) {
 exports.makeAttr = curry(2, makeAttr)
 function makeAttr(key, value) {
   key = key.toLowerCase()
-
-  if (value instanceof Attribute)  return value
 
   switch(key) {
     case 'class':           return Class(value)
@@ -299,11 +297,4 @@ function makeAttr(key, value) {
     case 'style':           return Style(value)
     default:                return Attr(key, value)
   }
-}
-
-exports.buildAttributes = buildAttributes
-function buildAttributes(attrs) {
-  return AttrSeq(pairs(attrs).map(function(pair) {
-    return makeAttr(pair[0], pair[1])
-  }))
 }

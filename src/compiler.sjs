@@ -36,11 +36,12 @@ union Token {
   Tag { value: String },
   Name { value: String },
   Lit { value: * },
-  HtmlExpr { value: * },
+  HtmlExpr { value: String },
   Node { tag: Token, attributes: Array, children: Array },
   Text { value: String },
-  Attr { name: *, value: * },
-  DynAttr { name: *, value: * }
+  Attr { name: Token, value: Token },
+  DynAttr { value: String },
+  Expr { value: String }
 } deriving (adt.Base)
 
 var parser = require('./parser')(Token)
@@ -116,10 +117,6 @@ function obj(xs) {
                                              , kind: 'init' } })})
 }
 
-function attrs(xs) {
-  return obj(xs.map(cc))
-}
-
 function array(xs) {
   return node('ArrayExpression', { elements: xs })
 }
@@ -128,15 +125,13 @@ function cc {
   Tag(v)        => lit(v),
   Name(v)       => lit(v),
   Lit(v)        => lit(v),
-  HtmlExpr(v)   => call(thunk(parseExpr(v)), []),
+  Expr(v)       => parseExpr(v),
+  HtmlExpr(v)   => method(id('$_helm'), id('dynamicHtml'), [thunk(parseExpr(v))]),
   Text(v)       => method(id('$_helm'), id('text'), [lit(v)]),
-  Node(t,as,xs) => method(id('$_helm'), id('build'), [cc(t), attrs(as), array(xs.map(cc))]),
-  Attr(n, v)    => [cc(n), cc(v)],
-  DynAttr(n, v) => [ cc(n)
-                   , method( id('$_helm'), id('dynamicAttr')
-                           , [thunk(method( id('$_helm')
-                                          , id('makeAttr')
-                                          , [cc(n), parseExpr(v)]))])]
+  Node(t,as,xs) => method( id('$_helm'), id('build')
+                         , [cc(t), array(as.map(cc)), array(xs.map(cc))]),
+  Attr(n, v)    => method(id('$_helm'), id('makeAttr'), [cc(n), cc(v)]),
+  DynAttr(v)    => method(id('$_helm'), id('dynamicAttr'), [thunk(parseExpr(v))])
 }
 
 
@@ -151,5 +146,3 @@ function compile(source) {
   return escodegen.generate(fn(null, [id('$_helm'), id('$scope')]
                                , ret(seq), {}))
 }
-
-
