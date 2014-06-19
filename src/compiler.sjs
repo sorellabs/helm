@@ -25,72 +25,131 @@
  * @module helm/compiler
  */
 
-var adt = require('adt-simple')
+require('ometajs')
+var adt       = require('adt-simple')
+var extend    = require('xtend')
+var esprima   = require('esprima')
+var escodegen = require('escodegen')
 
 // -- Data structures --------------------------------------------------
 union Token {
   Tag { value: String },
   Name { value: String },
   Lit { value: * },
-  Expr { value: * },
+  HtmlExpr { value: * },
   Node { tag: Token, attributes: Array, children: Array },
+  Text { value: String },
   Attr { name: *, value: * },
   DynAttr { name: *, value: * }
 } deriving (adt.Base)
 
+var parser = require('./parser')(Token)
 
-// -- Parser -----------------------------------------------------------
-ometa Parser {
-  ws = space*,
-  eof = ~char,
-
-  digits = digit+:as -> Number(as.join('')),
-  number = digits:a ('.' digits:b)? -> [#Lit, Number(a + '.' + (b || 0))],
-
-  stringEscape = token('\\"'),
-  stringChar   = (stringEscape | (~seq('"') char)):a -> a,
-  string       = '"' <stringChar*>:as '"'            -> [#Lit, as],
-
-  lit = string | number,
-
-  tag = <(digit | letter)+>:a -> [#Tag, a.toLowerCase()],
-
-  nameStart = letter | '_',
-  nameRest  = digit | letter | '_' | '-' | '.',
-  name      = <nameStart nameRest*>:a -> [#Name, a.toLowerCase()],
-
-  text = <(~('<' | '>' | '(' | ')') char)+>:a -> [#Text, a],
-
-  jschar = '(' jsexpr:xs ')' -> ('(' + xs + ')')
-         | ~')' char,
-  jsexpr = '(' <jschar+>:a ')' -> [#Expr, a],
-
-  expr = '<' ws tag:t (ws attr:as)* ws '/' '>' -> [#VNode, as || [], t]
-       | '<' ws tag:t (ws attr:as)* ws '>' expr*:xs ws '<' '/' ws tag:t2 ws '>' ?(t[1] === t2[1]) -> [#Node, t, as || [], xs || []]
-       | jsexpr
-       | text,
-
-  attr = name:a ws '=' ws jsexpr:b -> [#DynAttr, a, b]
-       | name:a ws '=' ws lit:b -> [#Attr, a, b],
-
-  helm = (ws expr*):xs eof -> xs
+// -- Helpers ----------------------------------------------------------
+function parseExpr(code) {
+  var tokens = esprima.parse(code).body
+  if (tokens.length !== 1 || tokens[0].type !== 'ExpressionStatement')
+    throw new SyntaxError('Expected a single expression.')
+  return tokens[0].expression
 }
 
-ometa Compiler {
-  Tag :a             -> Tag(a),
-  Name :a            -> Name(a),
-  Expr :a            -> Expr(a),
-  Lit :a             -> Lit(a),
-  VNode cc:t         -> Node(t, [], []),
-  Node cc:t [cc*:xs] -> Node(t, [], xs),
-  Attr cc:a cc:b     -> Attr(a, b),
-  DynAttr cc:a cc:b  -> DynAttr(a, b)
-
-  cc = [:t apply(t):a] -> a
+// -- Code generation --------------------------------------------------
+function node(type, body) {
+  return extend({ type: type }, body)
 }
+
+function lit(value) {
+  return node('Literal', { value: value })
+}
+
+function call(callee, args) {
+  return node('CallExpression', { callee: callee
+                                , arguments: args })
+}
+
+function expr(body) {
+  return node('ExpressionStatement', { expression: body })
+}
+
+function block(body) {
+  return node('BlockStatement', { body: body })
+}
+
+function ret(value) {
+  return node('ReturnStatement', { argument: value })
+}
+
+function fn(id, params, body, others) {
+  return node( 'FunctionExpression'
+             , extend( { id: id
+                       , params: params
+                       , body: block([body])
+                       , expression: false
+                       , generator: false }
+                     , others))
+}
+
+function thunk(body) {
+  return fn(null, [], ret(body), {})
+}
+
+function member(object, property, computed) {
+  return node( 'MemberExpression'
+             , { object: object
+               , property: property
+               , computed: !!computed })
+}
+
+function id(a) {
+  return node('Identifier', { name: a })
+}
+
+function method(object, method, args) {
+  return call(member(object, method, false), args)
+}
+
+function obj(xs) {
+  return node( 'ObjectExpression'
+             , { properties: xs.map(function(x) {
+                                      return { key: x[0]
+                                             , value: x[1]
+                                             , kind: 'init' } })})
+}
+
+function attrs(xs) {
+  return obj(xs.map(cc))
+}
+
+function array(xs) {
+  return node('ArrayExpression', { elements: xs })
+}
+
+function cc {
+  Tag(v)        => lit(v),
+  Name(v)       => lit(v),
+  Lit(v)        => lit(v),
+  HtmlExpr(v)   => call(thunk(parseExpr(v)), []),
+  Text(v)       => method(id('$_helm'), id('text'), [lit(v)]),
+  Node(t,as,xs) => method(id('$_helm'), id('build'), [cc(t), attrs(as), array(xs.map(cc))]),
+  Attr(n, v)    => [cc(n), cc(v)],
+  DynAttr(n, v) => [ cc(n)
+                   , method( id('$_helm'), id('dynamicAttr')
+                           , [thunk(method( id('$_helm')
+                                          , id('attr')
+                                          , [cc(n), parseExpr(v)]))])]
+}
+
+
 
 // -- Public API -------------------------------------------------------
+exports.compile = compile
 function compile(source) {
-  
+  var tokens = parser.Parser.matchAll(source, 'helm');
+  var ast    = parser.Compiler.match(tokens, 'cc');
+  var seq    = method(id('$_helm'), id('htmlSeq'), [array(ast.map(cc))])
+
+  return escodegen.generate(fn(null, [id('$_helm'), id('$scope')]
+                               , ret(seq), {}))
 }
+
 

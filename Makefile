@@ -52,6 +52,7 @@ $(TEST_BLD)/%.js: $(TEST_DIR)/%.sjs
 
 # -- Tasks -------------------------------------------------------------
 all: $(TGT)
+	cp $(SRC_DIR)/*.ometajs $(LIB_DIR)
 
 bundle: dist/$(PACKAGE).umd.js
 

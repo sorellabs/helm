@@ -23,7 +23,7 @@ macro helm__compile {
       })
     }
 
-    var compile = require('../lib/compiler').compile;
+    var compile = require('./lib/compiler').compile;
     var result = parser.read(compile(source));
     result.pop(); // EOF
     _copyContext(result, context);

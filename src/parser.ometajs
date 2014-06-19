@@ -1,0 +1,60 @@
+function Module(adt) {
+  ometa Parser {
+    ws = space*,
+    eof = ~char,
+  
+    digits = digit+:as -> Number(as.join('')),
+    number = digits:a ('.' digits:b)? -> [#Lit, Number(a + '.' + (b || 0))],
+  
+    stringEscape = token('\\"'),
+    stringChar   = (stringEscape | (~seq('"') char)):a -> a,
+    string       = '"' <stringChar*>:as '"'            -> [#Lit, as],
+  
+    lit = string | number,
+  
+    tag = <(digit | letter)+>:a -> [#Tag, a.toLowerCase()],
+  
+    nameStart = letter | '_',
+    nameRest  = digit | letter | '_' | '-' | '.',
+    name      = <nameStart nameRest*>:a -> [#Name, a.toLowerCase()],
+  
+    text = <(~('<' | '>' | '(' | ')') char)+>:a -> [#Text, a],
+  
+    jschar = '(' jsexpr:xs ')' -> ('(' + xs + ')')
+           | ~')' char,
+    jsexpr = '(' <jschar+>:a ')' -> a,
+  
+    expr = '<' ws tag:t (ws attr)*:as ws '/' '>' -> [#VNode, as, t]
+         | '<' ws tag:t (ws attr)*:as ws '>' expr*:xs ws '<' '/' ws tag:t2 ws '>' ?(t[1] === t2[1]) -> [#Node, t, as, xs]
+         | jsexpr:a -> [#HtmlExpr, a]
+         | text,
+  
+    attr = name:a ws '=' ws jsexpr:b -> [#DynAttr, a, b]
+         | name:a ws '=' ws lit:b -> [#Attr, a, b],
+  
+    helm = (ws expr)*:xs eof -> [#Helm, xs]
+  }
+  
+  ometa Compiler {
+    Tag :a                      -> adt.Tag(a),
+    Name :a                     -> adt.Name(a),
+    Expr :a                     -> adt.Expr(a),
+    Lit :a                      -> adt.Lit(a),
+    VNode cc:t [cc*:as]         -> adt.Node(t, as, []),
+    Node cc:t [cc*:as] [cc*:xs] -> adt.Node(t, as, xs),
+    Text :a                     -> adt.Text(a),
+    Attr cc:a cc:b              -> adt.Attr(a, b),
+    DynAttr cc:a :b             -> adt.DynAttr(a, b),
+    HtmlExpr :a                 -> adt.HtmlExpr(a),
+    Helm [cc*:xs]               -> xs,
+  
+    cc = [:t apply(t):a] -> a
+  }
+
+  return { Parser: Parser
+         , Compiler: Compiler
+         }
+}
+
+module.exports = Module
+
