@@ -135,7 +135,7 @@ function cc {
   DynAttr(n, v) => [ cc(n)
                    , method( id('$_helm'), id('dynamicAttr')
                            , [thunk(method( id('$_helm')
-                                          , id('attr')
+                                          , id('makeAttr')
                                           , [cc(n), parseExpr(v)]))])]
 }
 

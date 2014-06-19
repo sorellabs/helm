@@ -282,24 +282,28 @@ function build(tag, attributes, children) {
   :      /* otherwise */   Node(tag, attributes, children)
 }
 
-exports.buildAttributes
+exports.makeAttr = curry(2, makeAttr)
+function makeAttr(key, value) {
+  key = key.toLowerCase()
+
+  if (value instanceof Attribute)  return value
+
+  switch(key) {
+    case 'class':           return Class(value)
+    case 'contenteditable': return ContentEditable(value)
+    case 'dir':             return Dir(value)
+    case 'hidden':          return Hidden(value)
+    case 'id':              return Id(value)
+    case 'tabindex':        return TabIndex(value)
+    case 'href':            return Href(value)
+    case 'style':           return Style(value)
+    default:                return Attr(key, value)
+  }
+}
+
+exports.buildAttributes = buildAttributes
 function buildAttributes(attrs) {
   return AttrSeq(pairs(attrs).map(function(pair) {
-    var key   = pair[0].toLowerCase()
-    var value = pair[1]
-
-    if (value instanceof Attribute)  return value
-
-    switch(key) {
-      case 'class':           return Class(value)
-      case 'contenteditable': return ContentEditable(value)
-      case 'dir':             return Dir(value)
-      case 'hidden':          return Hidden(value)
-      case 'id':              return Id(value)
-      case 'tabindex':        return TabIndex(value)
-      case 'href':            return Href(value)
-      case 'style':           return Style(value)
-      default:                return Attr(key, value)
-    }
+    return makeAttr(pair[0], pair[1])
   }))
 }
