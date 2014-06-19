@@ -23,7 +23,7 @@ function Module(adt) {
              | '\\' char:a,
     text = <textChar+>:a -> [#Text, a],
   
-    jschar = '(' <jschar+>:xs ')' -> ('(' + xs + ')')
+    jschar = '(' <jschar*>:xs ')' -> ('(' + xs + ')')
            | string:a  -> JSON.stringify(a[1])
            | jsComment -> ''
            | ~')' char,
