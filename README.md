@@ -15,12 +15,73 @@ A type-safe HTML templating library.
 ```js
 var _    = require('helm').build
 var text = require('helm').text
+var attr = require('helm').makeAttr
 
 function link(a){
-  return _('a', { class: 'link', href: a.url }, text(a.text))
+  return _('a', [attr('class', ['link']), attr('href', a.url)], [text(a.text)])
 }
 
+var items = [
+  { url: '/example/a', text: 'Something' }
+, { url: '/example/b', text: 'More stuff' }
+]
 
+var page = _('html', [], [
+            , _('head', [], [
+               , _('title', [], [text('Helm')])
+               , _('meta', [attr('charset', 'utf-8')])])
+            , _('body'
+               , _('div', [ attr('id', 'content')
+                          , attr('class', ['item-list', 'simple-list'])]
+                  , items.map(link)))])
+```
+
+Or with the Sweet.js macros:
+
+```js
+var _    = require('helm').build
+var text = require('helm').text
+var seq  = require('helm').htmlSeq
+
+function link(a){
+  return $helm `<a class=(["link"]) href=(a.url)>(text(a.text))</a>`
+}
+
+var items = [
+  { url: '/example/a', text: 'Something' }
+, { url: '/example/b', text: 'More stuff' }
+]
+
+var page = $helm `
+  <html>
+    <head>
+      <title>Helm</title>
+      <meta charset="utf-8" />
+    </head>
+    <body>
+      <div id="content" class=(["item-list", "simple-list"])>
+        (seq(items.map(link)))
+      </div>
+    </body>
+  </html>
+`
+```
+
+All resulting in this HTML structure:
+
+```html
+<html>
+  <head>
+    <title>Helm</title>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <div id="content" class="item-list simple-list">
+      <a class="link" href="/example/a">Something</a>
+      <a class="link" href="/example/b">More stuff</a>
+    </div>
+  </body>
+</html>
 ```
 
 
