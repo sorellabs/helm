@@ -32,15 +32,4 @@ macro helm__compile {
 }
 
 
-// -- Helpers ----------------------------------------------------------
-macro $toString {
-  case { _ $a } => {
-    var val = #{$a}[0].token.value;
-    var stx = makeValue(val, #{here});
-    return withSyntax ($val = [stx]) {
-      return #{$val}
-    }
-  }
-}
-
 export $helm
