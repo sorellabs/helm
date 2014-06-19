@@ -89,8 +89,8 @@ function asSafeUrl(a) {
 
 // -- Data structures --------------------------------------------------
 union Html {
-  ChildlessNode { tag: isTagName, attributes: isAttributeArray },
-  Node { tag: isTagName, attributes: isAttributeArray, content: Html },
+  ChildlessNode { tag: isTagName, attributes: Attribute },
+  Node { tag: isTagName, attributes: Attribute, content: Html },
   Text { value: String },
   DynamicHtml { value: Function },
   HtmlSeq { values: isHtmlArray }
@@ -104,6 +104,7 @@ union Attribute {
   Id { value: isId },
   TabIndex { value: Number },
   Href { value: asSafeUrl },
+  Style { value: Object },
   Attr { name: isName, value: String },
   DynamicAttr { value: Function },
   AttrSeq { values: isAttributeArray }
@@ -120,11 +121,11 @@ union DirValues {
 
 // -- Rendering elements -----------------------------------------------
 ChildlessNode::render = function() {
-  return "<" + this.tag + " " + renderAttrs(this.attributes) + ">"
+  return "<" + this.tag + " " + this.attributes.render() + ">"
 }
 
 Node::render = function() {
-  return "<" + this.tag + " " + renderAttrs(this.attributes) + ">"
+  return "<" + this.tag + " " + this.attributes.render() + ">"
        + this.content.render()
        + "</" + this.tag + ">"
 }
@@ -174,6 +175,10 @@ Href::render = function() {
   return 'href="' + this.value.toString() + '"'
 }
 
+Style::render = function() {
+  return 'style="' + entities.encode(pairs(this.value).map(λ[# + ':' + #]).join('; ')) + '"'
+}
+
 Attr::render = function() {
   return this.name + '="' + entities.encode(this.value) + '"'
 }
@@ -200,11 +205,6 @@ DirValues::render = function { return match this {
   Auto => "auto"
 }}
 
-// -- Helper functions -------------------------------------------------
-function renderAttrs(xs) {
-  return xs.map(λ[#.render()]).join(' ')
-}
-
 
 // -- Public interface -------------------------------------------------
 
@@ -223,6 +223,7 @@ var hidden          = exports.hidden          = Hidden;
 var id              = exports.id              = Id;
 var tabIndex        = exports.tabIndex        = TabIndex;
 var href            = exports.href            = Href;
+var style           = exports.style           = Style;
 var attr            = exports.attr            = curry(2, Attr);
 var dynamicAttr     = exports.dynamicAttr     = DynamicAttr;
 var attrSeq         = exports.attrSeq         = AttrSeq;
