@@ -49,7 +49,7 @@ function isTagName(a) {
 
 function isName(a) {
   a = a.toLowerCase();
-  if (!/^[\w_][\w\d_-.]*$/.test(a))  throw new TypeError('Expected Name, got: ' + a);
+  if (!/^[\w_][\w\d_\-\.]*$/.test(a))  throw new TypeError('Expected Name, got: ' + a);
   if (/on.+/.test(a) || isDisabled(a)) throw new TypeError('Invalid Name: ' + a);
   return a
 }
