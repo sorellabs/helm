@@ -157,6 +157,14 @@ This library assumes an ES5 environment, but can be easily supported in ES3
 platforms by the use of shims. Just include [es5-shim][] :)
 
 
+## Acknowledgements
+
+  * The whole idea for the Sweet.js macro came from
+    [Andrey Popp](http://github.com/andreypopp)'s
+    [sweet-jsx](https://github.com/andreypopp/sweet-jsx/blob/master/index.sjs)
+    library :)
+
+
 ## Licence
 
 Copyright (c) 2014 Quildreen Motta.
