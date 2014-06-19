@@ -1,0 +1,35 @@
+{
+  "name": "helm",
+  "version": "0.0.0",
+  "description": "A type-safe HTML templating library.",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robotlolita/helm"
+  },
+  "keywords": [
+    "fantasy-land",
+    "folktale"
+  ],
+  "author": "Quildreen Motta",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/robotlolita/helm/issues"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "alright": "^1.0.0",
+    "browserify": "^3.33.0",
+    "hifive": "^0.4.0",
+    "hifive-spec": "^0.2.1",
+    "hifive-tap": "^0.1.0",
+    "ink-docstrap": "git://github.com/robotlolita/docstrap",
+    "jsdoc": "^3.3.0-alpha5",
+    "laws": "^0.2.1",
+    "sweet.js": "^0.6.0",
+    "uglify-js": "^2.4.3"
+  }
+}
