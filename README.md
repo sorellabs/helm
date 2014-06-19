@@ -7,7 +7,7 @@ helm
 [![experimental](http://hughsk.github.io/stability-badges/dist/experimental.svg)](http://github.com/hughsk/stability-badges)
 
 
-A type-safe HTML templating library.
+A safe HTML templating embedded domain specific language.
 
 
 ## Example

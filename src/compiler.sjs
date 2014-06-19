@@ -28,7 +28,6 @@
 require('ometajs')
 var adt       = require('adt-simple')
 var extend    = require('xtend')
-var esprima   = require('esprima')
 var escodegen = require('escodegen')
 
 // -- Data structures --------------------------------------------------
@@ -45,14 +44,6 @@ union Token {
 } deriving (adt.Base)
 
 var parser = require('./parser')(Token)
-
-// -- Helpers ----------------------------------------------------------
-function parseExpr(code) {
-  var tokens = esprima.parse(code).body
-  if (tokens.length !== 1 || tokens[0].type !== 'ExpressionStatement')
-    throw new SyntaxError('Expected a single expression.')
-  return tokens[0].expression
-}
 
 // -- Code generation --------------------------------------------------
 function node(type, body) {
@@ -109,6 +100,11 @@ function method(object, method, args) {
   return call(member(object, method, false), args)
 }
 
+function code(raw) {
+  return node( 'ExpressionStatement'
+             , { 'x-code': raw })
+}
+
 function obj(xs) {
   return node( 'ObjectExpression'
              , { properties: xs.map(function(x) {
@@ -125,13 +121,13 @@ function cc {
   Tag(v)        => lit(v),
   Name(v)       => lit(v),
   Lit(v)        => lit(v),
-  Expr(v)       => parseExpr(v),
-  HtmlExpr(v)   => method(id('$_helm'), id('dynamicHtml'), [thunk(parseExpr(v))]),
+  Expr(v)       => code(v),
+  HtmlExpr(v)   => method(id('$_helm'), id('dynamicHtml'), [thunk(code(v))]),
   Text(v)       => method(id('$_helm'), id('text'), [lit(v)]),
   Node(t,as,xs) => method( id('$_helm'), id('build')
                          , [cc(t), array(as.map(cc)), array(xs.map(cc))]),
   Attr(n, v)    => method(id('$_helm'), id('makeAttr'), [cc(n), cc(v)]),
-  DynAttr(v)    => method(id('$_helm'), id('dynamicAttr'), [thunk(parseExpr(v))])
+  DynAttr(v)    => method(id('$_helm'), id('dynamicAttr'), [thunk(code(v))])
 }
 
 
@@ -139,10 +135,10 @@ function cc {
 // -- Public API -------------------------------------------------------
 exports.compile = compile
 function compile(source) {
-  var tokens = parser.Parser.matchAll(source, 'helm');
-  var ast    = parser.Compiler.match(tokens, 'cc');
-  var seq    = method(id('$_helm'), id('htmlSeq'), [array(ast.map(cc))])
+  var tokens  = parser.Parser.matchAll(source, 'helm');
+  var ast     = parser.Compiler.match(tokens, 'cc');
+  var seq     = method(id('$_helm'), id('htmlSeq'), [array(ast.map(cc))])
+  var wrapper = fn(null, [id('$_helm')], ret(seq), {})
 
-  return escodegen.generate(fn(null, [id('$_helm'), id('$scope')]
-                               , ret(seq), {}))
+  return escodegen.generate(wrapper, { verbatim: 'x-code' })
 }

@@ -1,7 +1,7 @@
 {
   "name": "helm",
   "version": "0.0.0",
-  "description": "A type-safe HTML templating library.",
+  "description": "A safe HTML templating embedded domain specific language.",
   "main": "lib/index.js",
   "scripts": {
     "test": "make test"
@@ -11,8 +11,9 @@
     "url": "https://github.com/robotlolita/helm"
   },
   "keywords": [
-    "fantasy-land",
-    "folktale"
+    "html",
+    "templating",
+    "edsl"
   ],
   "author": "Quildreen Motta",
   "license": "MIT",

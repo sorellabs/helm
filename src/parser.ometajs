@@ -1,5 +1,6 @@
 function Module(adt) {
   ometa Parser {
+    jsComment = fromTo('//', '\n') | fromTo('/*', '*/'),
     ws = space*,
     eof = ~char,
   
@@ -23,6 +24,8 @@ function Module(adt) {
     text = <textChar+>:a -> [#Text, a],
   
     jschar = '(' <jschar+>:xs ')' -> ('(' + xs + ')')
+           | string:a  -> JSON.stringify(a[1])
+           | jsComment -> ''
            | ~')' char,
     jsexpr = '(' <jschar+>:a ')' -> a,
   
