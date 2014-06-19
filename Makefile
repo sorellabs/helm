@@ -32,11 +32,12 @@ dist/$(PACKAGE).umd.min.js: dist/$(PACKAGE).umd.js
 
 $(LIB_DIR)/%.js: $(SRC_DIR)/%.sjs
 	mkdir -p $(dir $@)
-	cat $< ./node_modules/macros.operators/macros/*.sjs > $(LIB_DIR)/tmp.sjs
+	cat ./node_modules/macros.operators/macros/*.sjs $< > $(LIB_DIR)/tmp.sjs
 	$(sjs) --readable-names \
 	       --sourcemap      \
 	       --module lambda-chop/macros \
 	       --module adt-simple/macros \
+	       --module sparkler/macros \
 	       --output $@      \
 	       $(LIB_DIR)/tmp.sjs
 	rm $(LIB_DIR)/tmp.sjs

@@ -94,7 +94,7 @@ union Html {
   Text { value: String },
   DynamicHtml { value: Function },
   HtmlSeq { values: isHtmlArray }
-}
+} deriving (adt.Base, adt.Cata)
 
 union Attribute {
   Class { values: isClassArray },
@@ -108,15 +108,15 @@ union Attribute {
   Attr { name: isName, value: String },
   DynamicAttr { value: Function },
   AttrSeq { values: isAttributeArray }
-}
+} deriving (adt.Base, adt.Cata)
 
 union ContentEditableValues {
   True, False, Inherit
-}
+} deriving (adt.Base, adt.Cata)
 
 union DirValues {
   LTR, RTL, Auto
-}
+} deriving (adt.Base, adt.Cata)
 
 
 // -- Rendering elements -----------------------------------------------
@@ -160,7 +160,7 @@ Dir::render = function() {
 
 Hidden::render = function() {
   return this.value?      'hidden="hidden"'
-  :      /* otherwise */  return ''
+  :      /* otherwise */  ''
 }
 
 Id::render = function() {
@@ -176,7 +176,10 @@ Href::render = function() {
 }
 
 Style::render = function() {
-  return 'style="' + entities.encode(pairs(this.value).map(λ[# + ':' + #]).join('; ')) + '"'
+  return 'style="' + entities.encode(pairs(this.value)
+                                       .map(λ[# + ':' + #])
+                                       .join('; ')) 
+       + '"'
 }
 
 Attr::render = function() {
@@ -193,13 +196,13 @@ AttrSeq::render = function() {
   return this.values.map(λ[#.render()]).join(' ')
 }
 
-ContentEditableValues::render = function { return match this {
+ContentEditableValues::render = function() { return match this {
   True    => "true",
   False   => "false",
   Inherit => "inherit"
 }}
 
-DirValues::render = function { return match this {
+DirValues::render = function() { return match this {
   LTR  => "ltr",
   RTL  => "rtl",
   Auto => "auto"
