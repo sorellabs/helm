@@ -34,17 +34,40 @@ var URI      = require('net.uri').URI
 var curry    = require('core.lambda').curry
 
 
+// -- Constants --------------------------------------------------------
+var DISABLED_NAMES = 'class contenteditable dir hidden id tabindex href'.split(' ')
+
+var VOID_ELEMENTS = ["area", "base", "br", "command", "embed", "hr", "img"
+                    ,"input", "keygen", "link", "meta", "param", "source"
+                    ,"track", "wbr"];
+
+var ELEMENTS = ["html", "head", "title", "style", "script", "noscript"
+               ,"template", "body", "section", "nav", "article", "aside"
+               ,"h1", "h2", "h3", "h4", "h5", "h6", "header", "footer"
+               ,"address", "main", "p", "pre", "blockquote", "ol", "ul", "li"
+               ,"dl", "dt", "dd", "figure", "figcaption", "div", "a", "em"
+               ,"strong", "small", "s", "cite", "q", "dfn", "abbr", "data"
+               ,"time", "code", "var", "samp", "kbd", "sub", "sup", "i", "b"
+               ,"u", "mark", "ruby", "rt", "rp", "bdi", "bdo", "span", "ins"
+               ,"del", "iframe", "object", "video", "audio", "canvas", "map"
+               ,"svg", "math", "table", "caption", "colgroup", "col", "tbody"
+               ,"thead", "tfoot", "tr", "td", "th", "form", "fieldset", "legend"
+               ,"label", "button", "select", "datalist", "optgroup", "options"
+               ,"textarea", "output", "progress", "meter", "details", "summary"
+               ,"menuitem", "menu"];
+
 // -- Helpers ----------------------------------------------------------
 function pairs(o) {
   return Object.keys(o).map(λ(k) -> [k, o[k]])
 }
 
+function isVoid(tag) {
+  return VOID_ELEMENTS.indexOf(tag.toLowerCase()) !== -1
+}
 
 // -- Type checkers ----------------------------------------------------
-var disabledNames = 'class contenteditable dir hidden id tabindex href'.split(' ')
-
 function isDisabled(a) {
-  return disabledNames.indexOf(a) !== -1
+  return DISABLED_NAMES.indexOf(a) !== -1
 }
 
 function isTagName(a) {
@@ -241,29 +264,41 @@ var attrSeq         = exports.attrSeq         = AttrSeq;
 exports.ContentEditableValues = ContentEditableValues;
 exports.DirValues             = DirValues;
 
-exports.elements = {}
+var elements = exports.elements = {}
 
 // Common elements
-var voidElements = ["area", "base", "br", "command", "embed", "hr", "img"
-                   ,"input", "keygen", "link", "meta", "param", "source"
-                   ,"track", "wbr"];
-
-voidElements.forEach(λ(x) -> exports.elements[x] = emptyNode(x));
+VOID_ELEMENTS.forEach(λ(x) -> exports.elements[x] = emptyNode(x));
+ELEMENTS.forEach(λ(x) -> exports.elements[x] = node(x));
 
 
-var elements = ["html", "head", "title", "style", "script", "noscript"
-               ,"template", "body", "section", "nav", "article", "aside"
-               ,"h1", "h2", "h3", "h4", "h5", "h6", "header", "footer"
-               ,"address", "main", "p", "pre", "blockquote", "ol", "ul", "li"
-               ,"dl", "dt", "dd", "figure", "figcaption", "div", "a", "em"
-               ,"strong", "small", "s", "cite", "q", "dfn", "abbr", "data"
-               ,"time", "code", "var", "samp", "kbd", "sub", "sup", "i", "b"
-               ,"u", "mark", "ruby", "rt", "rp", "bdi", "bdo", "span", "ins"
-               ,"del", "iframe", "object", "video", "audio", "canvas", "map"
-               ,"svg", "math", "table", "caption", "colgroup", "col", "tbody"
-               ,"thead", "tfoot", "tr", "td", "th", "form", "fieldset", "legend"
-               ,"label", "button", "select", "datalist", "optgroup", "options"
-               ,"textarea", "output", "progress", "meter", "details", "summary"
-               ,"menuitem", "menu"];
+// -- Simpler builder --------------------------------------------------
+exports.build = build
+function build(tag, attributes, children) {
+  attributes = buildAttributes(attributes || {})
+  children   = HtmlSeq(children || [])
+  tag        = tag.toLowerCase()
 
-elements.forEach(λ(x) -> exports.elements[x] = node(x));
+  return isVoid(tag)?      ChildlessNode(tag, attributes)
+  :      /* otherwise */   Node(tag, attributes, children)
+}
+
+function buildAttributes(attrs) {
+  return AttrSeq(pairs(attrs).map(function(pair) {
+    var key   = pair[0].toLowerCase()
+    var value = pair[1]
+
+    if (value instanceof Attribute)  return value
+
+    switch(key) {
+      case 'class':           return Class(value)
+      case 'contenteditable': return ContentEditable(value)
+      case 'dir':             return Dir(value)
+      case 'hidden':          return Hidden(value)
+      case 'id':              return Id(value)
+      case 'tabindex':        return TabIndex(value)
+      case 'href':            return Href(value)
+      case 'style':           return Style(value)
+      default:                return Attr(key, value)
+    }
+  }))
+}
