@@ -22,7 +22,7 @@
 /**
  * A type-safe HTML templating library.
  *
- * @module lib/index
+ * @module helm
  */
 
 // -- Dependencies -----------------------------------------------------
@@ -282,6 +282,7 @@ function build(tag, attributes, children) {
   :      /* otherwise */   Node(tag, attributes, children)
 }
 
+exports.buildAttributes
 function buildAttributes(attrs) {
   return AttrSeq(pairs(attrs).map(function(pair) {
     var key   = pair[0].toLowerCase()

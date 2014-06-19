@@ -24,15 +24,16 @@
     "core.arity": "^1.0.0",
     "core.lambda": "^1.0.0",
     "ent": "^2.0.0",
-    "net.uri": "^0.1.6"
+    "escodegen": "^1.3.3",
+    "esprima": "^1.2.2",
+    "net.uri": "^0.1.6",
+    "ometajs": "^3.3.6"
   },
   "devDependencies": {
-    "adt-simple": "^0.1.3",
     "alright": "^1.0.0",
     "browserify": "^3.33.0",
     "hifive": "^0.4.0",
     "hifive-spec": "^0.2.1",
-    "hifive-tap": "^0.1.0",
     "ink-docstrap": "git://github.com/robotlolita/docstrap",
     "jsdoc": "^3.3.0-alpha5",
     "lambda-chop": "^0.1.5",
