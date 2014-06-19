@@ -34,6 +34,8 @@ $(LIB_DIR)/%.js: $(SRC_DIR)/%.sjs
 	mkdir -p $(dir $@)
 	$(sjs) --readable-names \
 	       --sourcemap      \
+	       --module lambda-chop/macros \
+	       --module adt-simple/macros \
 	       --output $@      \
 	       $<
 

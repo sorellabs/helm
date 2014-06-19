@@ -24,3 +24,234 @@
  *
  * @module lib/index
  */
+
+// -- Dependencies -----------------------------------------------------
+var adt      = require('adt-simple');
+var unary    = require('core.arity').unary;
+var entities = require('ent');
+var kindOf   = Function.call.bind({}.toString);
+var URI      = require('net.uri').URI
+var curry    = require('core.lambda').curry
+
+
+// -- Type checkers ----------------------------------------------------
+var diabledNames = 'class contenteditable dir hidden id tabindex href'.split(' ')
+
+function isDisabled(a) {
+  return disabledNames.indexOf(a) !== -1
+}
+
+function isTagName(a) {
+  a = a.toLowerCase();
+  if (!/^[\d\w]+$/.test(a))  throw new TypeError('Expected valid tag, got: ' + a);
+  return a
+}
+
+function isName(a) {
+  a = a.toLowerCase();
+  if (!/^[\w_][\w\d_-.]*$/.test(a))  throw new TypeError('Expected Name, got: ' + a);
+  if (/on.+/.test(a) || isDisabled(a)) throw new TypeError('Invalid Name: ' + a);
+  return a
+}
+
+function isId(a) {
+  if (/\s/.test(a))  throw new TypeError('Expected ID');
+  return a
+}
+
+function isAttributeArray(xs) {
+  xs.forEach(function(x) {
+    if (!(x instanceof Attribute))  throw new TypeError('Expected Attribute')
+  });
+  return xs
+}
+
+function isClassArray(xs) {
+  xs.forEach(function(x) {
+    if (kindOf(x) !== '[object String]') throw new TypeError('Expected String')
+  });
+  return xs
+}
+
+function isHtmlArray(xs) {
+  xs.forEach(function(x) {
+    if (!(x instanceof Html))  throw new TypeError('Expected Html')
+  });
+  return xs
+}
+function asSafeUrl(a) {
+  var u = URI.fromString(a);
+  if ((u.protocol || '').toLowerCase() === 'javascript:')
+    throw new TypeError('javascript: protocols are not allowed.');
+  return u
+}
+
+
+// -- Data structures --------------------------------------------------
+union Html {
+  ChildlessNode { tag: isTagName, attributes: isAttributeArray },
+  Node { tag: isTagName, attributes: isAttributeArray, content: Html },
+  Text { value: String },
+  DynamicHtml { value: Function },
+  HtmlSeq { values: isHtmlArray }
+}
+
+union Attribute {
+  Class { values: isClassArray },
+  ContentEditable { value: ContentEditableValues },
+  Dir { value: DirValues },
+  Hidden { value: Boolean },
+  Id { value: isId },
+  TabIndex { value: Number },
+  Href { value: asSafeUrl },
+  Attr { name: isName, value: String },
+  DynamicAttr { value: Function },
+  AttrSeq { values: isAttributeArray }
+}
+
+union ContentEditableValues {
+  True, False, Inherit
+}
+
+union DirValues {
+  LTR, RTL, Auto
+}
+
+
+// -- Rendering elements -----------------------------------------------
+ChildlessNode::render = function() {
+  return "<" + this.tag + " " + renderAttrs(this.attributes) + ">"
+}
+
+Node::render = function() {
+  return "<" + this.tag + " " + renderAttrs(this.attributes) + ">"
+       + this.content.render()
+       + "</" + this.tag + ">"
+}
+
+Text::render = function(){
+  return entities.encode(this.value)
+}
+
+DynamicHtml::render = function() {
+  var result = this.value.call(null);
+  if (!(result instanceof Html))  throw new TypeError('Expected Html');
+  return result.render()
+}
+
+HtmlSeq::render = function() {
+  return this.values.map(λ[#.render()]).join('')
+}
+
+
+// -- Rendering attributes ---------------------------------------------
+Class::render = function() {
+  return 'class="' + this.values.map(unary(entities.encode)).join(' ') + '"'
+}
+
+ContentEditable::render = function() {
+  return 'contenteditable="' + this.value.render() + '"'
+}
+
+Dir::render = function() {
+  return 'dir="' + this.value.render() + '"'
+}
+
+Hidden::render = function() {
+  return this.value?      'hidden="hidden"'
+  :      /* otherwise */  return ''
+}
+
+Id::render = function() {
+  return 'id="' + this.value + '"'
+}
+
+TabIndex::render = function() {
+  return 'tabindex="' + Math.floor(this.value) + '"'
+}
+
+Href::render = function() {
+  return 'href="' + this.value.toString() + '"'
+}
+
+Attr::render = function() {
+  return this.name + '="' + entities.encode(this.value) + '"'
+}
+
+DynamicAttr::render = function() {
+  var result = this.value.call();
+  if (!(result instanceof Attribute))  throw new TypeError('Expected Attribute')
+  return result.render()
+}
+
+AttrSeq::render = function() {
+  return this.values.map(λ[#.render()]).join(' ')
+}
+
+ContentEditableValues::render = function { return match this {
+  True    => "true",
+  False   => "false",
+  Inherit => "inherit"
+}}
+
+DirValues::render = function { return match this {
+  LTR  => "ltr",
+  RTL  => "rtl",
+  Auto => "auto"
+}}
+
+// -- Helper functions -------------------------------------------------
+function renderAttrs(xs) {
+  return xs.map(λ[#.render()]).join(' ')
+}
+
+
+// -- Public interface -------------------------------------------------
+
+// Utility functions for Html
+var node        = exports.node        = curry(3, Html.Node);
+var emptyNode   = exports.emptyNode   = curry(2, Html.childlessNode);
+var text        = exports.text        = Text;
+var dynamicHtml = exports.dynamicHtml = DynamicHtml;
+var htmlSeq     = exports.htmlSeq     = HtmlSeq;
+
+// Utility functions for attributes
+var className       = exports.className       = Class;
+var contentEditable = exports.contentEditable = ContentEditable;
+var dir             = exports.dir             = Dir;
+var hidden          = exports.hidden          = Hidden;
+var id              = exports.id              = Id;
+var tabIndex        = exports.tabIndex        = TabIndex;
+var href            = exports.href            = Href;
+var attr            = exports.attr            = curry(2, Attr);
+var dynamicAttr     = exports.dynamicAttr     = DynamicAttr;
+var attrSeq         = exports.attrSeq         = AttrSeq;
+
+// Enums
+exports.ContentEditableValues = ContentEditableValues;
+exports.DirValues             = DirValues;
+
+// Common elements
+var voidElements = ["area", "base", "br", "command", "embed", "hr", "img"
+                   ,"input", "keygen", "link", "meta", "param", "source"
+                   ,"track", "wbr"];
+
+voidElements.forEach(λ(x) -> exports[x] = emptyNode(x));
+
+
+var elements = ["html", "head", "title", "style", "script", "noscript"
+               ,"template", "body", "section", "nav", "article", "aside"
+               ,"h1", "h2", "h3", "h4", "h5", "h6", "header", "footer"
+               ,"address", "main", "p", "pre", "blockquote", "ol", "ul", "li"
+               ,"dl", "dt", "dd", "figure", "figcaption", "div", "a", "em"
+               ,"strong", "small", "s", "cite", "q", "dfn", "abbr", "data"
+               ,"time", "code", "var", "samp", "kbd", "sub", "sup", "i", "b"
+               ,"u", "mark", "ruby", "rt", "rp", "bdi", "bdo", "span", "ins"
+               ,"del", "iframe", "object", "video", "audio", "canvas", "map"
+               ,"svg", "math", "table", "caption", "colgroup", "col", "tbody"
+               ,"thead", "tfoot", "tr", "td", "th", "form", "fieldset", "legend"
+               ,"label", "button", "select", "datalist", "optgroup", "options"
+               ,"textarea", "output", "progress", "meter", "details", "summary"
+               ,"menuitem", "menu"];
+
+elements.forEach(λ(x) -> exports[x] = node(x));
