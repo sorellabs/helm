@@ -1,6 +1,6 @@
 {
-  "name": "helm",
-  "version": "0.0.0",
+  "name": "@origamitower/helm",
+  "version": "0.1.0",
   "description": "Safe HTML templating",
   "main": "build/index.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "templating",
     "edsl"
   ],
-  "author": "Quildreen Motta",
+  "author": "Quil",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/robotlolita/helm/issues"
