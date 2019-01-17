@@ -1,0 +1,61 @@
+Html {
+  Fragment 
+    = Node* end
+
+  Node 
+    = "<" tag Attribute* ">" Node* "</" tag? ">"  -- container
+    | "<" tag Attribute* "/>"                     -- void
+    | Text                                        -- text
+    | JsExpr                                      -- dynamic
+
+  Attribute
+    = attr "=" JsExpr     -- js
+    | attr "=" Literal    -- literal
+    | JsExpr              -- dynamic
+  
+  JsExpr = insertion_point
+  Text = text
+  Literal = string
+
+
+  // ## Lexical structure
+  newline = "\n" | "\r"
+  line = (~newline any)*
+  comment = "//" line
+  space += comment
+
+  tag = letter+
+  attr = letter+
+
+  string = "\"" string_character* "\""
+
+  string_character
+    = ~("\"" | "\\") any
+    | "\\" escape_sequence  doubleChar = (~"")
+
+  escape_sequence
+    = "b"
+    | "f"
+    | "n"
+    | "r"
+    | "t"
+    | "u" unicode_escape
+    | "\""
+    | "\\"
+
+  raw_hex_digit 
+    = "0" .. "9" | "a" .. "f" | "A" .. "F"
+
+  unicode_escape
+    = raw_hex_digit raw_hex_digit raw_hex_digit raw_hex_digit
+
+  insertion_point
+    = "<$" digit+ ">"
+
+  text_character
+    = ~("<" | ">") any    -- regular
+    | "\\" any            -- escaped
+
+  text
+    = text_character+
+}

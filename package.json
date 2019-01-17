@@ -20,6 +20,17 @@
   "bugs": {
     "url": "https://github.com/robotlolita/helm/issues"
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "html-entities": "1.2.1",
+    "ohm-js": "0.14.0",
+    "sanitize-html": "1.20.0"
+  },
+  "devDependencies": {
+    "jest": "^23.6.0",
+    "prettier": "^1.15.3",
+    "ts-jest": "^23.10.5",
+    "ts-node": "^7.0.1",
+    "typedoc": "^0.14.2",
+    "typescript": "^3.2.2"
+  }
 }
