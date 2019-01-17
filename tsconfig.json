@@ -17,7 +17,8 @@
     "target": "es2017",
     "noEmitOnError": true,
     "lib": ["es2017", "dom"],
-    "types": ["node"]
+    "types": ["node"],
+    "declaration": true
   },
   "include": ["source/**/*.ts"],
   "exclude": ["node_modules/**/*"]
