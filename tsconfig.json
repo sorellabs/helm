@@ -16,7 +16,7 @@
     "sourceMap": true,
     "target": "es2017",
     "noEmitOnError": true,
-    "lib": ["es2017"],
+    "lib": ["es2017", "dom"],
     "types": ["node"]
   },
   "include": ["source/**/*.ts"],
