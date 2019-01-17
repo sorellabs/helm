@@ -9,8 +9,7 @@ Html {
     | JsExpr                                      -- dynamic
 
   Attribute
-    = attr "=" JsExpr     -- js
-    | attr "=" Literal    -- literal
+    = attr "=" Literal    -- literal
     | JsExpr              -- dynamic
   
   JsExpr = insertion_point
@@ -24,24 +23,28 @@ Html {
   comment = "//" line
   space += comment
 
-  tag = letter+
-  attr = letter+
+  id_start = letter
+  id_rest = letter | digit
+  id = id_start id_rest*
+
+  tag = id
+  attr = id
 
   string = "\"" string_character* "\""
 
   string_character
-    = ~("\"" | "\\") any
-    | "\\" escape_sequence  doubleChar = (~"")
+    = ~("\"" | "\\") any      -- regular
+    | "\\" escape_sequence    -- escaped
 
   escape_sequence
-    = "b"
-    | "f"
-    | "n"
-    | "r"
-    | "t"
-    | "u" unicode_escape
-    | "\""
-    | "\\"
+    = "b"                   -- backspace
+    | "f"                   -- formfeed
+    | "n"                   -- newline
+    | "r"                   -- return
+    | "t"                   -- tab
+    | "u" unicode_escape    -- unicode
+    | "\""                  -- quote
+    | "\\"                  -- backslash
 
   raw_hex_digit 
     = "0" .. "9" | "a" .. "f" | "A" .. "F"

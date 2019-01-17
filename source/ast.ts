@@ -132,8 +132,8 @@ export abstract class Html {
 }
 
 export class ChildlessNode extends Html {
-  readonly tag: VoidTag;
-  readonly attributes: Attribute[];
+  readonly tag!: VoidTag;
+  readonly attributes!: Attribute[];
 
   constructor(tag: string, attributes: Attribute[]) {
     super();
@@ -147,9 +147,9 @@ export class ChildlessNode extends Html {
 }
 
 export class Node extends Html {
-  readonly tag: Tag;
-  readonly attributes: Attribute[];
-  readonly content: Html[];
+  readonly tag!: Tag;
+  readonly attributes!: Attribute[];
+  readonly content!: Html[];
 
   constructor(tag: string, attributes: Attribute[], content: Html[]) {
     super();
@@ -166,7 +166,7 @@ export class Node extends Html {
 }
 
 export class Text extends Html {
-  readonly value: string;
+  readonly value!: string;
 
   constructor(value: string) {
     super();
@@ -179,7 +179,7 @@ export class Text extends Html {
 }
 
 export class DynamicHtml extends Html {
-  readonly value: () => Html;
+  readonly value!: () => Html;
 
   constructor(value: () => Html) {
     super();
@@ -197,7 +197,7 @@ export class DynamicHtml extends Html {
 }
 
 export class SafeHtml extends Html {
-  readonly content: string;
+  readonly content!: string;
 
   constructor(value: string) {
     super();
@@ -210,7 +210,7 @@ export class SafeHtml extends Html {
 }
 
 export class HtmlSplice extends Html {
-  readonly values: Html[];
+  readonly values!: Html[];
 
   constructor(values: Html[]) {
     super();
@@ -229,7 +229,7 @@ export abstract class Attribute {
 
 // FIXME: check if values are proper classes
 export class ClassAttribute extends Attribute {
-  readonly values: string[];
+  readonly values!: string[];
 
   constructor(values: string[]) {
     super();
@@ -243,7 +243,7 @@ export class ClassAttribute extends Attribute {
 }
 
 export class IdAttribute extends Attribute {
-  readonly name: string;
+  readonly name!: string;
 
   constructor(name: string) {
     super();
@@ -256,7 +256,7 @@ export class IdAttribute extends Attribute {
 }
 
 export class DynamicAttribute extends Attribute {
-  readonly value: () => Attribute;
+  readonly value!: () => Attribute;
 
   constructor(value: () => Attribute) {
     super();
@@ -274,7 +274,7 @@ export class DynamicAttribute extends Attribute {
 }
 
 export class AttributeSplice extends Attribute {
-  readonly values: Attribute[];
+  readonly values!: Attribute[];
 
   constructor(values: Attribute[]) {
     super();

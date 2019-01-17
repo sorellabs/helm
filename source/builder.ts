@@ -83,8 +83,8 @@ export function attributeSplice(values: Attribute[]) {
   return new AttributeSplice(values);
 }
 
-const $html = htmlSplice;
-const $attr = attributeSplice;
+export const $html = htmlSplice;
+export const $attr = attributeSplice;
 
 export function node(
   tag: Tag | VoidTag,
@@ -101,18 +101,16 @@ export function node(
 export function attributes(
   record: Partial<{ className: string[]; id: string }>
 ) {
-  return attributeSplice(
-    ownKeys(record)
-      .map(key => {
-        switch (key) {
-          case "className":
-            return new ClassAttribute(record[key]);
-          case "id":
-            return new IdAttribute(record[key]);
-          default:
-            return null;
-        }
-      })
-      .filter(x => x != null)
-  );
+  return attributeSplice(ownKeys(record)
+    .map(key => {
+      switch (key) {
+        case "className":
+          return new ClassAttribute(record[key] || []);
+        case "id":
+          return new IdAttribute(record[key] || "");
+        default:
+          return null;
+      }
+    })
+    .filter(x => x != null) as Attribute[]);
 }

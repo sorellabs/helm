@@ -11,7 +11,7 @@ const grammarSource = FS.readFileSync(
 );
 const grammar = Ohm.grammar(grammarSource);
 
-function parseToAst(source: string) {
+export function parseToCst(source: string) {
   const match = grammar.match(source);
   if (match.failed()) {
     throw new SyntaxError(match.message);
@@ -20,86 +20,96 @@ function parseToAst(source: string) {
   }
 }
 
-function translate(
+export function translate(
   cst: Ohm.MatchResult,
   insertions: (Html | Attribute)[]
 ): HtmlSplice {
-  return CstToAst(
-    cst,
-    new class CstToAstVisitor {
-      Fragment(nodes: Html[]) {
-        return new HtmlSplice(nodes);
+  return CstToAst(cst, {
+    Fragment(nodes: Html[], _1: any) {
+      return new HtmlSplice(nodes);
+    },
+
+    Node_container(
+      this: any,
+      _1: any,
+      tag: string,
+      attributes: Attribute[],
+      _2: any,
+      children: Html[],
+      _3: any,
+      endTag: string | null,
+      _4: any
+    ) {
+      if (tag !== endTag) {
+        const pos = this.source.position.endPosition;
+        throw new SyntaxError(
+          `Unmatched tag ${tag} at ${pos.line}, ${pos.column}.\n\n${
+            this.source.sourceSlice
+          }`
+        );
       }
 
-      Node_container(
-        this: any,
-        _1: any,
-        tag: string,
-        attributes: Attribute[],
-        _2: any,
-        children: Html[],
-        _3: any,
-        endTag: string | null,
-        _4: any
-      ) {
-        if (tag !== endTag) {
-          const pos = this.source.position.endPosition;
-          throw new SyntaxError(
-            `Unmatched tag ${tag} at ${pos.line}, ${pos.column}.\n\n${
-              this.source.sourceSlice
-            }`
-          );
-        }
-
-        if (isChildless(tag)) {
-          if (children.length === 0) {
-            return new ChildlessNode(tag as any, attributes);
-          } else {
-            throw new SyntaxError(
-              `The element ${tag} does not accept any content.`
-            );
-          }
+      if (isChildless(tag)) {
+        if (children.length === 0) {
+          return new ChildlessNode(tag as any, attributes);
         } else {
-          return new Node(tag as any, attributes, children);
-        }
-      }
-
-      Node_void(_1: any, tag: string, attributes: Attribute[], _2: any) {
-        return node(tag as any, attributes);
-      }
-
-      Text(content: string) {
-        return new Text(content);
-      }
-
-      JsExpr(point: number) {
-        if (point < 0 || point >= insertions.length) {
-          throw new RangeError(
-            `Insertion out of range ${point} out of ${
-              insertions.length
-            } (this is an internal error)`
+          throw new SyntaxError(
+            `The element ${tag} does not accept any content.`
           );
         }
+      } else {
+        return new Node(tag as any, attributes, children);
+      }
+    },
 
-        return insertions[point];
+    Node_void(_1: any, tag: string, attributes: Attribute[], _2: any) {
+      return node(tag as any, attributes);
+    },
+
+    Text(content: string[]) {
+      return new Text(content.join(""));
+    },
+
+    JsExpr(point: number) {
+      if (point < 0 || point >= insertions.length) {
+        throw new RangeError(
+          `Insertion out of range ${point} out of ${
+            insertions.length
+          } (this is an internal error)`
+        );
       }
 
-      // FIXME: include a primitive for this
-      Attribute_js(attr: string, _1: any, expr: Attribute) {
-        return attributes({ [attr]: expr });
-      }
+      return insertions[point];
+    },
 
-      Attribute_literal(attr: string, _1: any, value: string) {
-        return attributes({ [attr]: value });
-      }
+    // FIXME: include a primitive for this
+    Attribute_js(attr: string, _1: any, expr: Attribute) {
+      return attributes({ [attr]: expr });
+    },
 
-      insertion_point(_1: any, digits: string[], _2: any) {
-        return Number(digits.join(""));
-      }
+    Attribute_literal(attr: string, _1: any, value: string) {
+      return attributes({ [attr]: value });
+    },
 
-      Literal(value: string) {
-        return JSON.parse(value);
-      }
-    }()
-  );
+    insertion_point(_1: any, digits: string[], _2: any) {
+      return Number(digits.join(""));
+    },
+
+    Literal(value: string) {
+      return JSON.parse(value);
+    }
+  });
+}
+
+export function html(
+  parts: TemplateStringsArray,
+  ...insertions: (Html | Attribute)[]
+) {
+  const source = parts.reduce((code, part, index) => {
+    const infix = index === 0 ? "" : `<\$${index - 1}>`;
+    return code + infix + part;
+  }, "");
+
+  const cst = parseToCst(source);
+  return translate(cst, insertions);
 }

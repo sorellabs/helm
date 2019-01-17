@@ -245,10 +245,10 @@ function makeParser(code) {
 }
 
 function CstToAst(match, bindings) {
-  const visitor = Object.keys(bindings)
+  const visitor = Reflect.ownKeys(bindings)
     .map(x => {
       const args = Array.from(
-        { length: bindings[x].length - 1 },
+        { length: bindings[x].length },
         (_, i) => `$${i}`
       );
       const fn = new Function(
@@ -258,8 +258,8 @@ function CstToAst(match, bindings) {
         )}) }`
       )((ctx, ...args) => {
         const meta = {
-          children: args.map(x => new Position(x.source, { filename })),
-          source: new Position(ctx.source, { filename })
+          children: args.map(x => new Position(x.source, { filename: "" })),
+          source: new Position(ctx.source, { filename: "" })
         };
         return bindings[x].call(
           meta,
